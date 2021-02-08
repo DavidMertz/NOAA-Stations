@@ -1,4 +1,4 @@
-# Comparison of `noaa-stations` tool with `module-noaa-stations`
+# Comparison of `noaa-stations` with `module-noaa-stations`
 
 This document describes differences between an implementation of 
 similar functionality within a stand-alone command line tool written
