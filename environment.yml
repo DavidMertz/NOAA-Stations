@@ -1,0 +1,10 @@
+name: NOAA-stations
+channels:
+    - intel
+    - conda-forge
+dependencies:
+    - python=3.9
+    - pandas=1
+    - pip
+    - requests
+    - bs4

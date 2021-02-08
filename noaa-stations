@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+import sys, os
+import argparse
+import sqlite3
+from urllib.error import URLError
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+from columns import na_values, sql_create
+
+base_url = "https://www.ncei.noaa.gov/data/global-summary-of-the-day/access"
+
+def config(args=sys.argv[1:]):
+    desc = "Read remote NOAA data,  store in local database, and query it"
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('-f', '--fetch', action='store_true',
+                        help="Obtain data from remote NOAA weather data")
+    parser.add_argument('-d', '--database', type=str,
+                        default="noaa-stations.sqlite",
+                        help="Specify SQLite database file (suffix optional")
+    parser.add_argument('-m', '--min-year', type=int, default=1929,
+                        help="Starting year for data to retrieve")
+    parser.add_argument('-M', '--max-year', type=int, default=2024,
+                        help="Ending year for data to retrieve")
+    parser.add_argument('--stations', type=str, default='ALL', nargs='+',
+                        help="Space separated list of the station IDs of interest")
+    parser.add_argument('query', type=str, default="SELECT * FROM data;", nargs="?",
+                        help="Return results of SQL query against NOAA weather data")
+    parser.add_argument('-t', '--format', type=str, default="table",
+                        help="Return results in format: table/csv/json/tsv")
+
+    args = parser.parse_args(args)
+    # Touch-up database name if only barename given w/o extension
+    if not args.database.endswith(('.sqlite', '.db')):
+        args.database += '.sqlite'
+    return args
+
+
+def fetch(args, db):
+    "Retrieve data from the NOAA weather stations and put in database"
+    for year in range(args.min_year, args.max_year+1):
+        year_url = f"{base_url}/{year}"
+        resp = requests.get(year_url)
+        if resp.status_code != 200:
+            print(f"No data is available for year {year}", file=sys.stderr)
+            continue
+        elif args.stations == 'ALL':
+            soup = BeautifulSoup(resp.text, features="html.parser")
+            links = [a['href'] for a in soup.find_all('a')]
+            csvs = [link for link in links if link.endswith('.csv')]
+        else:
+            csvs = [f"{station}.csv" for station in args.stations]
+
+        for csv in csvs:
+            url = f"{year_url}/{csv}"
+            try:
+                df = pd.read_csv(url, na_values=na_values)
+            except URLError:
+                print(f"File {url} is not readable", file=sys.stderr)
+            for tup in df.itertuples():
+                vals = f"{tuple(tup[1:])}".replace('nan', 'NULL')
+                db.execute(f"INSERT OR REPLACE INTO noaa VALUES {vals}")
+
+
+def query(q, db):
+    df = pd.read_sql(q, db)
+    print(df)
+
+
+if __name__ == '__main__':
+    args = config()
+    db = sqlite3.connect(args.database)
+    db.execute(sql_create)  # Create if not exists
+
+    if args.fetch:
+        fetch(args, db)
+        db.commit()
+    else:
+        query(args.query, db)
