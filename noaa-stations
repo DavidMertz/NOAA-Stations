@@ -28,11 +28,18 @@ def config(args=sys.argv[1:]):
                         help="Return results of SQL query against NOAA weather data")
     parser.add_argument('-t', '--format', type=str, default="table",
                         help="Return results in format: table/csv/json/tsv")
+    parser.add_argument('-o', '--output', type=str, default=None,
+                        help="Send query results to a file rather than STDOUT")
 
     args = parser.parse_args(args)
     # Touch-up database name if only barename given w/o extension
     if not args.database.endswith(('.sqlite', '.db')):
         args.database += '.sqlite'
+    # Optionally choose output file
+    if args.output is None:
+        args.output = sys.stdout
+    else:
+        args.output = open(args.output, 'w')
     return args
 
 
@@ -62,9 +69,17 @@ def fetch(args, db):
                 db.execute(f"INSERT OR REPLACE INTO noaa VALUES {vals}")
 
 
-def query(q, db):
-    df = pd.read_sql(q, db)
-    print(df)
+def query(args, db):
+    "Perform an SQL query against local NOAA data and output in chosen format"
+    df = pd.read_sql(args.query, db)
+    if args.format.lower() == "table":
+        print(df, file=args.output)
+    elif args.format.lower() == "csv":
+        print(df.to_csv(index=False), file=args.output)
+    elif args.format.lower() == "tsv":
+        print(df.to_csv(index=False, seq='\t'), file=args.output)
+    elif args.format.lower() == "json":
+        print(df.to_json(orient="records"), file=args.output)
 
 
 if __name__ == '__main__':
@@ -76,4 +91,4 @@ if __name__ == '__main__':
         fetch(args, db)
         db.commit()
     else:
-        query(args.query, db)
+        query(args, db)
