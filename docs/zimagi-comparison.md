@@ -75,9 +75,9 @@ The only file written by hand contains 33 code lines (and some comments).
 | Performs good normalization     | Yes           | No[4]
 | Provisions for cloud deployment | Yes           | No[5]
 | Supports "pretty" output        | Yes           | Yes
-| Supports CSV export             | ???           | Yes
-| Supports TSV export             | ???           | Yes
-| Supports JSON export            | ???           | Yes
+| Supports CSV export             | Yes           | Yes
+| Supports TSV export             | No            | Yes
+| Supports JSON export            | Yes           | Yes
 
 
 [1] Only a `test` import subcommand defined currently, but data model 

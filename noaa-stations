@@ -24,7 +24,7 @@ def config(args=sys.argv[1:]):
                         help="Ending year for data to retrieve")
     parser.add_argument('--stations', type=str, default='ALL', nargs='+',
                         help="Space separated list of the station IDs of interest")
-    parser.add_argument('query', type=str, default="SELECT * FROM data;", nargs="?",
+    parser.add_argument('query', type=str, default="SELECT * FROM noaa;", nargs="?",
                         help="Return results of SQL query against NOAA weather data")
     parser.add_argument('-t', '--format', type=str, default="table",
                         help="Return results in format: table/csv/json/tsv")
