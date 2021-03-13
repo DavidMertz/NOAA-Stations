@@ -91,7 +91,7 @@ My estimate is that it would require about 150 additional lines of YAML
 and maybe 20 lines of Python.
 
 [4] The current command-line tool simply uses the same table structure
-as the source CSV files.  Adding a child talbe with foreign key would 
+as the source CSV files.  Adding a child table with foreign key would 
 require about 6 extra lines of Python, and 8 extra lines of SQL (which
 is currently defined as a Python string rather than separate file).
 

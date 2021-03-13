@@ -1,15 +1,22 @@
 na_values = {"TEMP": 9999.9, "DEWP": 9999.9, "SLP": 9999.9, "STP": 9999.9,
-             "MAX": 9999.9, "MIN": 9999.9, "PRCP": 99.99, "SNDP": 999.99,
+             "MAX": 9999.9, "MIN": 9999.9, "PRCP": 99.99, "SNDP": 999.9,
              "VISIB": 999.9, "WDSP": 999.9, "MXSPD": 999.9, "GUST": 999.9}
 
-sql_create = """
-CREATE TABLE IF NOT EXISTS noaa (
+sql_station = """
+CREATE TABLE IF NOT EXISTS station (
     STATION TEXT NOT NULL,      -- Station number (WMO/DATSAV3 possibly combined w/WBAN number).
-    DATE TEXT NOT NULL,         -- mm/dd/yyyy format.
     LATITUDE REAL,              -- decimated degrees (Southern Hemisphere negative).
     LONGITUDE REAL,             -- decimated degrees (Western Hemisphere negative).
     ELEVATION REAL,             -- Given in meters.
     NAME TEXT,                  -- Name of station/airport/military base.
+    PRIMARY KEY (station)
+);
+"""
+
+sql_day = """
+CREATE TABLE IF NOT EXISTS day (
+    STATION TEXT NOT NULL,      -- Station number (WMO/DATSAV3 possibly combined w/WBAN number).
+    DATE TEXT NOT NULL,         -- mm/dd/yyyy format.
     TEMP REAL,                  -- Mean temp in degrees Fahrenheit to tenths.
     TEMP_ATTRIBUTES INTEGER,    -- #observations used in calculating mean temperature.
     DEWP REAL,                  -- Mean dew point for the day in degrees Fahrenheit to tenths.
@@ -31,7 +38,14 @@ CREATE TABLE IF NOT EXISTS noaa (
     PRCP REAL,                  -- Total precip (rain and/or melted snow) in inches.
     PRCP_ATTRIBUTES TEXT,       -- Fulll explanation in Column-Descriptions-NOAA.txt
     SNDP REAL,                  -- Snow depth in inches to tenths
-    FRSHTT TEXT,                -- Full explantion in Column-Descriptions-NOAA.txt
+    FRSHTT TEXT,                -- Full explanation in Column-Descriptions-NOAA.txt
     PRIMARY KEY (station, date)
-)
+);
+"""
+
+sql_all = """
+CREATE VIEW IF NOT EXISTS noaa
+AS
+   SELECT * FROM station
+   LEFT JOIN day ON station.station = day.station;
 """

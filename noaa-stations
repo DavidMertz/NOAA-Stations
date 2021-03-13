@@ -6,7 +6,7 @@ from urllib.error import URLError
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-from columns import na_values, sql_create
+from columns import na_values, sql_all, sql_station, sql_day
 
 base_url = "https://www.ncei.noaa.gov/data/global-summary-of-the-day/access"
 
@@ -17,7 +17,7 @@ def config(args=sys.argv[1:]):
                         help="Obtain data from remote NOAA weather data")
     parser.add_argument('-d', '--database', type=str,
                         default="noaa-stations.sqlite",
-                        help="Specify SQLite database file (suffix optional")
+                        help="Specify SQLite database file (suffix optional)")
     parser.add_argument('-m', '--min-year', type=int, default=1929,
                         help="Starting year for data to retrieve")
     parser.add_argument('-M', '--max-year', type=int, default=2024,
@@ -62,11 +62,19 @@ def fetch(args, db):
             url = f"{year_url}/{csv}"
             try:
                 df = pd.read_csv(url, na_values=na_values)
+                station_df = df[['STATION', 'LATITUDE', 'LONGITUDE', 'ELEVATION', 'NAME']]
+                day_df = df.drop(['LATITUDE', 'LONGITUDE', 'ELEVATION', 'NAME'], axis=1)
             except URLError:
                 print(f"File {url} is not readable", file=sys.stderr)
-            for tup in df.itertuples():
+                continue
+
+            for tup in station_df.itertuples():
                 vals = f"{tuple(tup[1:])}".replace('nan', 'NULL')
-                db.execute(f"INSERT OR REPLACE INTO noaa VALUES {vals}")
+                db.execute(f"INSERT OR REPLACE INTO station VALUES {vals}")
+
+            for tup in day_df.itertuples():
+                vals = f"{tuple(tup[1:])}".replace('nan', 'NULL')
+                db.execute(f"INSERT OR REPLACE INTO day VALUES {vals}")
 
 
 def query(args, db):
@@ -85,10 +93,12 @@ def query(args, db):
 if __name__ == '__main__':
     args = config()
     db = sqlite3.connect(args.database)
-    db.execute(sql_create)  # Create if not exists
+    db.execute(sql_station)  # Create if not exists
+    db.execute(sql_day)
+    db.execute(sql_all)
 
     if args.fetch:
         fetch(args, db)
         db.commit()
-    else:
+    if args.query:
         query(args, db)
